@@ -1,0 +1,136 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Restaurant {
+  id                  String   @id @default(uuid())
+  name                String
+  slug                String   @unique
+  address             String
+  google_review_url   String
+  is_active           Boolean  @default(true)
+  phone               String?
+  email               String?
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+  
+  wheel_active        Boolean  @default(true)
+  prizes              Prize[]
+  clients             Client[]
+  users               User[]
+  participations      Participation[]
+  analytics           Analytics[]
+}
+
+model User {
+  id              String   @id @default(uuid())
+  email           String   @unique
+  password_hash   String
+  role            Role     @default(STAFF)
+  restaurant_id   String?
+  restaurant      Restaurant? @relation(fields: [restaurant_id], references: [id], onDelete: SetNull)
+  created_at      DateTime @default(now())
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN_RESTAURANT
+  STAFF
+}
+
+model Client {
+  id              String   @id @default(uuid())
+  restaurant_id   String
+  restaurant      Restaurant @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
+  
+  phone           String   // Identifiant principal
+  email           String
+  first_name      String?
+  last_name       String?
+  city            String?
+  age_range       String?  // -18, 18-24, 25-34, 35-44, 45+
+  
+  gdpr_consent    Boolean  @default(false)
+  consent_date    DateTime?
+  
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+  
+  participations  Participation[]
+  
+  @@unique([restaurant_id, phone])
+  @@index([restaurant_id, email])
+  @@index([restaurant_id, phone])
+}
+
+model Prize {
+  id              String   @id @default(uuid())
+  restaurant_id   String
+  restaurant      Restaurant @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
+  
+  name            String   // Unique par restaurant
+  percentage      Float    // 0-100
+  message         String
+  is_active       Boolean  @default(true)
+  
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+  
+  participations  Participation[]
+  
+  @@unique([restaurant_id, name])
+}
+
+model Participation {
+  id              String   @id @default(uuid())
+  restaurant_id   String
+  restaurant      Restaurant @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
+  
+  client_id       String
+  client          Client   @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  
+  prize_id        String?
+  prize           Prize?   @relation(fields: [prize_id], references: [id], onDelete: SetNull)
+  
+  status          PrizeStatus @default(A_RECUPERER)
+  
+  won_at          DateTime @default(now())
+  expires_at      DateTime // won_at + 7 jours
+  claimed_at      DateTime?
+  
+  is_lost         Boolean  @default(false) // Si perdu implicite ou explicite
+  
+  created_at      DateTime @default(now())
+  
+  @@index([restaurant_id, client_id])
+  @@index([status, expires_at])
+}
+
+enum PrizeStatus {
+  A_RECUPERER
+  RECUPERE
+  EXPIRE
+}
+
+model Analytics {
+  id              String   @id @default(uuid())
+  restaurant_id   String
+  restaurant      Restaurant @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
+  
+  event_type      String   // VISIT, GOOGLE_CLICK, FORM_SUBMIT, SPIN, WIN, LOSE, CLAIM
+  date            DateTime @default(now())
+  
+  client_id       String?
+  participation_id String?
+  
+  @@index([restaurant_id, date])
+  @@index([restaurant_id, event_type])
+}
