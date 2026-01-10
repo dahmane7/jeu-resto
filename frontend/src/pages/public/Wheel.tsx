@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { RotateCw } from 'lucide-react';
 
 interface Prize {
@@ -12,11 +12,12 @@ interface Prize {
 export default function Wheel() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isSpinning, setIsSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
 
-  // Données mockées des lots
+  // Données mockées des lots (correspondent aux lots de la page Paramétrage Roue)
   const prizes: Prize[] = [
     { id: '1', name: 'Café offert', percentage: 30, color: '#8B5CF6' },
     { id: '2', name: 'Dessert offert', percentage: 25, color: '#EC4899' },
@@ -133,7 +134,11 @@ export default function Wheel() {
         // Naviguer vers le résultat après l'animation
         setTimeout(() => {
           navigate(`/r/${slug}/result`, {
-            state: { prize: selectedPrize, isWin: selectedPrize?.id !== 'lose' },
+            state: { 
+              prize: selectedPrize, 
+              isWin: selectedPrize?.id !== 'lose',
+              formData: location.state?.formData,
+            },
           });
         }, 500);
       }

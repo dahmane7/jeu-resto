@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Settings, Users } from 'lucide-react';
+import { LayoutDashboard, Settings, Users, Gift } from 'lucide-react';
 
 interface NavigationTabsProps {
   restaurantId: string;
@@ -23,6 +23,11 @@ export default function NavigationTabs({ restaurantId }: NavigationTabsProps) {
       name: 'Clients',
       href: `/restaurant/${restaurantId}/clients`,
       icon: Users,
+    },
+    {
+      name: 'Récupérations',
+      href: `/restaurant/${restaurantId}/recuperations`,
+      icon: Gift,
     },
   ];
 

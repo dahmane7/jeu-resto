@@ -1,41 +1,34 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 
 interface User {
   id: string;
   email: string;
-  role: 'SUPER_ADMIN' | 'ADMIN_RESTAURANT' | 'STAFF';
+  role: string;
   restaurant_id?: string;
 }
 
 interface AuthState {
-  user: User | null;
   token: string | null;
-  isAuthenticated: boolean;
-  login: (token: string, user: User) => void;
+  user: User | null;
+  setAuth: (token: string, user: User) => void;
   logout: () => void;
-  setUser: (user: User) => void;
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      user: null,
-      token: null,
-      isAuthenticated: false,
-      login: (token, user) => {
-        localStorage.setItem('token', token);
-        set({ token, user, isAuthenticated: true });
-      },
-      logout: () => {
-        localStorage.removeItem('token');
-        set({ user: null, token: null, isAuthenticated: false });
-      },
-      setUser: (user) => set({ user }),
-    }),
-    {
-      name: 'auth-storage',
-      partialize: (state) => ({ user: state.user, token: state.token, isAuthenticated: state.isAuthenticated }),
+export const useAuthStore = create<AuthState>((set) => ({
+  token: typeof window !== 'undefined' ? localStorage.getItem('auth-token') : null,
+  user: typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('auth-user') || 'null') : null,
+  setAuth: (token, user) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('auth-token', token);
+      localStorage.setItem('auth-user', JSON.stringify(user));
     }
-  )
-);
+    set({ token, user });
+  },
+  logout: () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('auth-token');
+      localStorage.removeItem('auth-user');
+    }
+    set({ token: null, user: null });
+  },
+}));

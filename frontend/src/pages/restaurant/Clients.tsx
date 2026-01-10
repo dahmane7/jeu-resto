@@ -83,7 +83,6 @@ export default function Clients() {
   });
 
   const handleExportCSV = () => {
-    // Générer le CSV
     const headers = ['Téléphone', 'Email', 'Prénom', 'Nom', 'Ville', 'Tranche d\'âge', 'Date création', 'Participations'];
     const rows = filteredClients.map(client => [
       client.phone,
@@ -101,7 +100,6 @@ export default function Clients() {
       ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
     ].join('\n');
 
-    // Télécharger le fichier
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
@@ -169,9 +167,7 @@ export default function Clients() {
           <div className="mt-4 pt-4 border-t border-gray-200">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Téléphone
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
                 <input
                   type="text"
                   value={filters.phone}
@@ -181,9 +177,7 @@ export default function Clients() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                 <input
                   type="text"
                   value={filters.email}
@@ -193,9 +187,7 @@ export default function Clients() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nom
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nom</label>
                 <input
                   type="text"
                   value={filters.name}
@@ -205,9 +197,7 @@ export default function Clients() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Ville
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Ville</label>
                 <input
                   type="text"
                   value={filters.city}
@@ -217,9 +207,7 @@ export default function Clients() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Tranche d'âge
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Tranche d'âge</label>
                 <select
                   value={filters.age_range}
                   onChange={(e) => setFilters({ ...filters, age_range: e.target.value })}
@@ -259,27 +247,13 @@ export default function Clients() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Téléphone
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Email
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Nom
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Ville
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Âge
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Participations
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Téléphone</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nom</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ville</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Âge</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Participations</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -326,9 +300,7 @@ export default function Clients() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900">
-                Fiche Client
-              </h2>
+              <h2 className="text-xl font-bold text-gray-900">Fiche Client</h2>
               <button
                 onClick={() => setSelectedClient(null)}
                 className="text-gray-400 hover:text-gray-600"
@@ -373,11 +345,6 @@ export default function Clients() {
                   <label className="block text-sm font-medium text-gray-500">Participations</label>
                   <p className="mt-1 text-sm text-gray-900">{selectedClient.participations_count}</p>
                 </div>
-              </div>
-
-              <div className="pt-4 border-t border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">Historique des participations</h3>
-                <p className="text-sm text-gray-500">À compléter avec les données réelles</p>
               </div>
             </div>
 

@@ -4,18 +4,18 @@ import { useAuthStore } from '../store/authStore';
 
 interface ProtectedRouteProps {
   children: ReactNode;
-  allowedRoles?: ('SUPER_ADMIN' | 'ADMIN_RESTAURANT' | 'STAFF')[];
+  allowedRoles: string[];
 }
 
 export default function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
-  const { isAuthenticated, user } = useAuthStore();
+  const { user, token } = useAuthStore();
 
-  if (!isAuthenticated) {
+  if (!token || !user) {
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedRoles && user && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/" replace />;
+  if (!allowedRoles.includes(user.role)) {
+    return <Navigate to="/login" replace />;
   }
 
   return <>{children}</>;

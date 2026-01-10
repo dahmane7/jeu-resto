@@ -1,16 +1,10 @@
 import { Router } from 'express';
-import { authController } from '../controllers/auth.controller';
-import { authenticate } from '../middleware/auth.middleware';
+import { login, me } from '../controllers/auth.controller.js';
+import { authenticate } from '../middleware/auth.middleware.js';
 
 const router = Router();
 
-// POST /api/auth/login
-router.post('/login', authController.login.bind(authController));
-
-// POST /api/auth/register (optionnel, pour créer des utilisateurs)
-router.post('/register', authController.register.bind(authController));
-
-// GET /api/auth/me (récupérer l'utilisateur connecté)
-router.get('/me', authenticate, authController.me.bind(authController));
+router.post('/login', login);
+router.get('/me', authenticate, me);
 
 export default router;

@@ -1,22 +1,18 @@
-import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowRight, Lock } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
 
 const formSchema = z.object({
-  phone: z.string()
-    .min(10, 'Le téléphone doit contenir au moins 10 caractères')
-    .regex(/^[0-9+\s()-]+$/, 'Format de téléphone invalide'),
-  email: z.string()
-    .email('Email invalide'),
+  phone: z.string().min(10, 'Le numéro de téléphone doit contenir au moins 10 caractères'),
+  email: z.string().email('Email invalide'),
   first_name: z.string().optional(),
   last_name: z.string().optional(),
   city: z.string().optional(),
   age_range: z.string().optional(),
-  gdpr_consent: z.boolean().refine(val => val === true, {
-    message: 'Vous devez accepter les conditions',
+  gdpr_consent: z.boolean().refine((val) => val === true, {
+    message: 'Vous devez accepter la politique de confidentialité',
   }),
 });
 
@@ -25,39 +21,38 @@ type FormData = z.infer<typeof formSchema>;
 export default function Form() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      gdpr_consent: false,
+    },
   });
 
   const onSubmit = async (data: FormData) => {
-    setLoading(true);
-    
-    // Simuler un appel API
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Naviguer vers la roue
-    navigate(`/r/${slug}/wheel`);
+    try {
+      // En production, envoyer les données à l'API
+      // await api.post(`/api/r/${slug}/participate`, data);
+      
+      // Pour l'instant, naviguer directement vers la roue
+      navigate(`/r/${slug}/wheel`, { state: { formData: data } });
+    } catch (error) {
+      console.error('Erreur lors de la soumission:', error);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md mx-auto bg-white rounded-2xl shadow-xl p-8">
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Informations
-          </h2>
-          <p className="text-gray-600">
-            Remplis le formulaire pour jouer à la roue
-          </p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Formulaire</h2>
+        <p className="text-gray-600 mb-6 text-sm">
+          Remplis ce formulaire pour jouer à la roue de la fortune !
+        </p>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {/* Téléphone */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -66,8 +61,8 @@ export default function Form() {
             <input
               type="tel"
               {...register('phone')}
-              placeholder="06 12 34 56 78"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholder="0612345678"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             />
             {errors.phone && (
               <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>
@@ -82,8 +77,8 @@ export default function Form() {
             <input
               type="email"
               {...register('email')}
-              placeholder="votre@email.com"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholder="exemple@email.com"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             />
             {errors.email && (
               <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
@@ -99,7 +94,7 @@ export default function Form() {
               type="text"
               {...register('first_name')}
               placeholder="Jean"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             />
           </div>
 
@@ -112,7 +107,7 @@ export default function Form() {
               type="text"
               {...register('last_name')}
               placeholder="Dupont"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             />
           </div>
 
@@ -125,7 +120,7 @@ export default function Form() {
               type="text"
               {...register('city')}
               placeholder="Paris"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             />
           </div>
 
@@ -136,7 +131,7 @@ export default function Form() {
             </label>
             <select
               {...register('age_range')}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             >
               <option value="">Sélectionner</option>
               <option value="-18">-18</option>
@@ -148,38 +143,36 @@ export default function Form() {
           </div>
 
           {/* Consentement RGPD */}
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <div className="flex items-start">
-              <input
-                type="checkbox"
-                {...register('gdpr_consent')}
-                className="mt-1 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-              />
-              <label className="ml-3 text-sm text-gray-700">
-                J'accepte que mes données soient utilisées pour me contacter et recevoir des offres du restaurant.{' '}
-                <span className="text-red-500">*</span>
-                <br />
-                <a href="/privacy" className="text-indigo-600 hover:text-indigo-800 underline">
-                  Politique de confidentialité
-                </a>
-              </label>
-            </div>
-            {errors.gdpr_consent && (
-              <p className="mt-2 text-sm text-red-600">{errors.gdpr_consent.message}</p>
-            )}
+          <div className="flex items-start gap-2">
+            <input
+              type="checkbox"
+              {...register('gdpr_consent')}
+              id="gdpr_consent"
+              className="mt-1 w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+            />
+            <label htmlFor="gdpr_consent" className="text-sm text-gray-700">
+              J'accepte la{' '}
+              <a href="#" className="text-indigo-600 hover:underline">
+                politique de confidentialité
+              </a>{' '}
+              <span className="text-red-500">*</span>
+            </label>
           </div>
+          {errors.gdpr_consent && (
+            <p className="text-sm text-red-600">{errors.gdpr_consent.message}</p>
+          )}
 
           {/* Bouton Submit */}
           <button
             type="submit"
-            disabled={loading}
+            disabled={isSubmitting}
             className="w-full px-6 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? (
-              'Chargement...'
+            {isSubmitting ? (
+              'Envoi en cours...'
             ) : (
               <>
-                Lancer la roue
+                Continuer
                 <ArrowRight className="w-5 h-5" />
               </>
             )}

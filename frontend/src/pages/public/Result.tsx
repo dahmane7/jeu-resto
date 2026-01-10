@@ -1,5 +1,6 @@
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
-import { PartyPopper, Frown, Clock, Gift } from 'lucide-react';
+import { PartyPopper, Frown, Clock, Gift, Copy, Check } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 interface Prize {
   id: string;
@@ -7,15 +8,41 @@ interface Prize {
   message?: string;
 }
 
+// Fonction pour générer un code unique
+function generateClaimCode(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Exclut les caractères ambigus
+  const part1 = Array.from({ length: 3 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  const part2 = Array.from({ length: 3 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  const part3 = Array.from({ length: 3 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  return `${part1}-${part2}-${part3}`;
+}
+
 export default function Result() {
   const { slug } = useParams<{ slug: string }>();
   const location = useLocation();
   const navigate = useNavigate();
+  const [claimCode, setClaimCode] = useState<string>('');
+  const [copied, setCopied] = useState(false);
   
   const { prize, isWin } = location.state || { 
     prize: null, 
     isWin: false 
   };
+
+  // Générer un code unique si le client a gagné
+  useEffect(() => {
+    if (isWin && prize) {
+      // Générer ou récupérer le code depuis le localStorage (pour éviter de le régénérer)
+      const storedCode = localStorage.getItem(`claim_code_${slug}_${prize.id}`);
+      if (storedCode) {
+        setClaimCode(storedCode);
+      } else {
+        const newCode = generateClaimCode();
+        setClaimCode(newCode);
+        localStorage.setItem(`claim_code_${slug}_${prize.id}`, newCode);
+      }
+    }
+  }, [isWin, prize, slug]);
 
   // Si pas de résultat, rediriger vers le formulaire
   if (!prize && !location.state) {
@@ -25,6 +52,12 @@ export default function Result() {
 
   const expirationDate = new Date();
   expirationDate.setDate(expirationDate.getDate() + 7);
+
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(claimCode);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center p-4">
@@ -65,11 +98,41 @@ export default function Result() {
               </div>
             </div>
 
+            {/* Code de réclamation */}
+            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl p-6 mb-6 text-white">
+              <p className="text-sm mb-3 font-semibold">Ton code de réclamation :</p>
+              <div className="flex items-center justify-center gap-3 mb-3">
+                <code className="text-3xl font-bold tracking-wider bg-white/20 px-4 py-2 rounded-lg">
+                  {claimCode}
+                </code>
+                <button
+                  onClick={handleCopyCode}
+                  className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+                  title="Copier le code"
+                >
+                  {copied ? (
+                    <Check className="w-5 h-5 text-green-300" />
+                  ) : (
+                    <Copy className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
+              <p className="text-xs opacity-90">
+                📸 Prends une capture d'écran ou copie ce code
+                <br />
+                Présente-le en caisse avec ton téléphone ou email
+              </p>
+            </div>
+
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
               <p className="text-sm text-blue-800">
                 💡 <strong>Comment récupérer ton lot ?</strong>
                 <br />
-                Présente-toi en caisse avec ton téléphone ou email pour récupérer ton gain.
+                1. Présente-toi en caisse avec ce code
+                <br />
+                2. Donne ton téléphone ou email
+                <br />
+                3. Le staff validera ta réclamation
               </p>
             </div>
 
