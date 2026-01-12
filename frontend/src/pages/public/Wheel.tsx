@@ -109,9 +109,21 @@ export default function Wheel() {
       }
     }
 
+    if (!selectedPrize) {
+      selectedPrize = prizes[prizes.length - 1]; // Fallback
+    }
+
+    // Calculer l'angle du centre du segment sélectionné (en degrés, où 0° = en haut)
+    const prizeCenterAngle = getPrizeAngleForPointer(selectedPrize);
+    
     // Animation de rotation
     const spins = 5; // Nombre de tours complets
-    const targetRotation = rotation + spins * 360 + (selectedPrize ? getPrizeAngle(selectedPrize) : 0);
+    // On veut que le centre du segment soit à 0° (sous la flèche) après rotation
+    // Position actuelle du centre : (rotation + prizeCenterAngle) % 360
+    // Pour que le centre soit à 0° : on doit tourner de (360 - (rotation + prizeCenterAngle) % 360)
+    const currentCenterPosition = (rotation + prizeCenterAngle) % 360;
+    const angleToAlign = (360 - currentCenterPosition) % 360;
+    const targetRotation = rotation + spins * 360 + angleToAlign;
     
     const startRotation = rotation;
     const duration = 3000; // 3 secondes
@@ -147,14 +159,31 @@ export default function Wheel() {
     animate();
   };
 
-  const getPrizeAngle = (prize: Prize): number => {
-    let currentAngle = 0;
+  // Calcule l'angle du centre du segment sélectionné (en degrés)
+  // La roue est dessinée en commençant à -90° (en haut)
+  // La flèche pointe vers 0° (en haut)
+  // Pour qu'un segment soit sous la flèche, son centre doit être à 0° après rotation
+  const getPrizeAngleForPointer = (prize: Prize): number => {
+    let currentAngleRad = -Math.PI / 2; // Commence en haut (-90° en radians)
+    
     for (const p of prizes) {
+      const segmentAngleRad = (p.percentage / totalPercentage) * 2 * Math.PI;
+      const segmentCenterRad = currentAngleRad + segmentAngleRad / 2;
+      
       if (p.id === prize.id) {
-        return currentAngle + (p.percentage / totalPercentage) * 360 / 2;
+        // Convertir l'angle du centre du segment en degrés
+        // Le centre est à segmentCenterRad radians
+        // En degrés, cela donne : (segmentCenterRad * 180 / Math.PI)
+        // Mais comme la roue commence à -90°, on doit ajuster pour que le haut soit à 0°
+        const centerAngleDeg = (segmentCenterRad * 180 / Math.PI);
+        // Normaliser entre 0 et 360
+        const normalizedAngle = ((centerAngleDeg + 90) % 360 + 360) % 360;
+        return normalizedAngle;
       }
-      currentAngle += (p.percentage / totalPercentage) * 360;
+      
+      currentAngleRad += segmentAngleRad;
     }
+    
     return 0;
   };
 
