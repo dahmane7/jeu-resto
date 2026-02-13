@@ -1,0 +1,135 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Restaurant {
+  id                  String   @id @default(uuid())
+  name                String
+  slug                String   @unique
+  address             String
+  google_review_url   String
+  is_active           Boolean  @default(true)
+  phone               String?
+  email               String?
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+
+  wheel_active        Boolean  @default(true)
+  prizes              Prize[]
+  clients             Client[]
+  users               User[]
+  participations      Participation[]
+  analytics           Analytics[]
+}
+
+model User {
+  id              String   @id @default(uuid())
+  email           String   @unique
+  password_hash   String
+  role            Role     @default(STAFF)
+  restaurant_id   String?
+  restaurant      Restaurant? @relation(fields: [restaurant_id], references: [id], onDelete: SetNull)
+  created_at      DateTime @default(now())
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN_RESTAURANT
+  STAFF
+}
+
+model Client {
+  id              String   @id @default(uuid())
+  restaurant_id   String
+  restaurant      Restaurant @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
+
+  phone           String
+  email           String
+  first_name      String?
+  last_name       String?
+  city            String?
+  age_range       String?
+
+  gdpr_consent    Boolean  @default(false)
+  consent_date    DateTime?
+
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  participations  Participation[]
+
+  @@unique([restaurant_id, phone])
+  @@index([restaurant_id, email])
+  @@index([restaurant_id, phone])
+}
+
+model Prize {
+  id              String   @id @default(uuid())
+  restaurant_id   String
+  restaurant      Restaurant @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
+
+  name            String
+  percentage      Float
+  message         String
+  is_active       Boolean  @default(true)
+
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  participations  Participation[]
+
+  @@unique([restaurant_id, name])
+}
+
+model Participation {
+  id              String   @id @default(uuid())
+  restaurant_id   String
+  restaurant      Restaurant @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
+
+  client_id       String
+  client          Client   @relation(fields: [client_id], references: [id], onDelete: Cascade)
+
+  prize_id        String?
+  prize           Prize?   @relation(fields: [prize_id], references: [id], onDelete: SetNull)
+
+  status          PrizeStatus @default(A_RECUPERER)
+
+  won_at          DateTime @default(now())
+  expires_at      DateTime
+  claimed_at      DateTime?
+
+  is_lost         Boolean  @default(false)
+
+  claim_code      String?  @unique
+
+  created_at      DateTime @default(now())
+
+  @@index([restaurant_id, client_id])
+  @@index([status, expires_at])
+}
+
+enum PrizeStatus {
+  A_RECUPERER
+  RECUPERE
+  EXPIRE
+}
+
+model Analytics {
+  id              String   @id @default(uuid())
+  restaurant_id   String
+  restaurant      Restaurant @relation(fields: [restaurant_id], references: [id], onDelete: Cascade)
+
+  event_type      String
+  date            DateTime @default(now())
+
+  client_id       String?
+  participation_id String?
+
+  @@index([restaurant_id, date])
+  @@index([restaurant_id, event_type])
+}

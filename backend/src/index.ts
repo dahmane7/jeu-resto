@@ -2,6 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.routes.js';
+import restaurantRoutes from './routes/restaurant.routes.js';
+import publicRoutes from './routes/public.routes.js';
+import { prisma } from './lib/prisma.js';
 
 dotenv.config();
 
@@ -17,10 +20,21 @@ app.use(express.json());
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/restaurants', restaurantRoutes);
+app.use('/api/public', publicRoutes);
 
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Backend is running' });
+// Health check (inclut un ping DB si DATABASE_URL est défini)
+app.get('/api/health', async (req, res) => {
+  const dbStatus = process.env.DATABASE_URL
+    ? await prisma.$queryRaw`SELECT 1`
+        .then(() => 'connected')
+        .catch(() => 'error')
+    : 'not_configured';
+  res.json({
+    status: 'ok',
+    message: 'Backend is running',
+    database: dbStatus,
+  });
 });
 
 // Start server

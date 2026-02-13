@@ -5,7 +5,7 @@
 ### Écran 1 : Avis Google
 **URL :** `http://localhost:5173/r/{slug}`
 
-**Exemple :** `http://localhost:5173/r/restaurant-1`
+**Exemple :** `http://localhost:5173/r/mon-restaurant` (slug du restaurant créé au seed)
 
 **Fonctionnalités :**
 - Page publique accessible sans authentification
@@ -15,17 +15,17 @@
 ### Écran 2 : Formulaire
 **URL :** `http://localhost:5173/r/{slug}/form`
 
-**Exemple :** `http://localhost:5173/r/restaurant-1/form`
+**Exemple :** `http://localhost:5173/r/mon-restaurant/form`
 
 ### Écran 3 : Roue
 **URL :** `http://localhost:5173/r/{slug}/wheel`
-
-**Exemple :** `http://localhost:5173/r/restaurant-1/wheel`
+            
+**Exemple :** `http://localhost:5173/r/mon-restaurant/wheel`
 
 ### Écran 4 : Résultat
 **URL :** `http://localhost:5173/r/{slug}/result`
 
-**Exemple :** `http://localhost:5173/r/restaurant-1/result`
+**Exemple :** `http://localhost:5173/r/mon-restaurant/result`
 
 ---
 
@@ -75,10 +75,10 @@
 
 | Type | URL | Authentification |
 |------|-----|------------------|
-| **Client - Accueil** | `/r/restaurant-1` | ❌ Public |
-| **Client - Formulaire** | `/r/restaurant-1/form` | ❌ Public |
-| **Client - Roue** | `/r/restaurant-1/wheel` | ❌ Public |
-| **Client - Résultat** | `/r/restaurant-1/result` | ❌ Public |
+| **Client - Accueil** | `/r/mon-restaurant` | ❌ Public |
+| **Client - Formulaire** | `/r/mon-restaurant/form` | ❌ Public |
+| **Client - Roue** | `/r/mon-restaurant/wheel` | ❌ Public |
+| **Client - Résultat** | `/r/mon-restaurant/result` | ❌ Public |
 | **Admin - Login** | `/login` | ❌ Public |
 | **Admin - Dashboard** | `/restaurant/restaurant-1/dashboard` | ✅ Requis |
 | **Admin - Paramétrage** | `/restaurant/restaurant-1/prizes` | ✅ Requis |
@@ -113,8 +113,9 @@
 ## 🎯 Test Complet
 
 ### Tester le Parcours Client
-1. Ouvrez : `http://localhost:5173/r/restaurant-1`
+1. Ouvrez : `http://localhost:5173/r/mon-restaurant`
 2. Suivez les étapes : Avis → Formulaire → Roue → Résultat
+3. Les données (visite, clic Google, formulaire, tirage, participation) sont enregistrées en base et visibles dans l’admin (Dashboard, Clients, Récupérations).
 
 ### Tester le Back-Office Admin
 1. Ouvrez : `http://localhost:5173/login`
@@ -125,7 +126,7 @@
 
 ## ⚠️ Notes Importantes
 
-- **Client** : Utilise le **slug** du restaurant (`restaurant-1`)
-- **Admin** : Utilise l'**ID** du restaurant (`restaurant-1`)
+- **Client** : Utilise le **slug** du restaurant (ex. `mon-restaurant` pour le restaurant créé au seed)
+- **Admin** : Utilise l'**ID** du restaurant (UUID après connexion)
 - Les routes admin sont **protégées** : vous devez être connecté
 - Les routes client sont **publiques** : accessibles sans authentification

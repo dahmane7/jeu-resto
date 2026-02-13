@@ -1,29 +1,43 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { apiFetch } from '../api/client';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { setAuth } = useAuthStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
-    // Mock login - en production, appeler l'API
-    if (email === 'admin@restaurant.com' && password === 'Admin123!') {
-      setAuth('mock-token', {
-        id: '1',
-        email: 'admin@restaurant.com',
-        role: 'ADMIN_RESTAURANT',
-        restaurant_id: 'restaurant-1',
+    setLoading(true);
+    try {
+      const data = await apiFetch<{ user: { id: string; email: string; role: string; restaurant_id?: string }; token: string }>(
+        '/api/auth/login',
+        { method: 'POST', body: JSON.stringify({ email, password }) }
+      );
+      setAuth(data.token, {
+        id: data.user.id,
+        email: data.user.email,
+        role: data.user.role,
+        restaurant_id: data.user.restaurant_id,
       });
-      navigate('/restaurant/restaurant-1/dashboard');
-    } else {
-      setError('Identifiants incorrects');
+      if (data.user.role === 'SUPER_ADMIN') {
+        navigate('/admin/dashboard');
+      } else if (data.user.restaurant_id) {
+        navigate(`/restaurant/${data.user.restaurant_id}/dashboard`);
+      } else {
+        navigate('/admin/dashboard');
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erreur de connexion';
+      setError(message.includes('401') || message.includes('incorrect') ? 'Identifiants incorrects' : message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -72,9 +86,10 @@ export default function Login() {
           <div>
             <button
               type="submit"
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              disabled={loading}
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
             >
-              Se connecter
+              {loading ? 'Connexion...' : 'Se connecter'}
             </button>
           </div>
         </form>

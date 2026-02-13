@@ -1,6 +1,6 @@
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
-import { PartyPopper, Frown, Clock, Gift, Copy, Check } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { Frown, Clock, Copy, Check } from 'lucide-react';
+import { useState } from 'react';
 
 interface Prize {
   id: string;
@@ -8,50 +8,38 @@ interface Prize {
   message?: string;
 }
 
-// Fonction pour générer un code unique
-function generateClaimCode(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Exclut les caractères ambigus
-  const part1 = Array.from({ length: 3 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-  const part2 = Array.from({ length: 3 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-  const part3 = Array.from({ length: 3 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-  return `${part1}-${part2}-${part3}`;
+interface Participation {
+  id: string;
+  claim_code: string | null;
+  expires_at: string;
 }
 
 export default function Result() {
   const { slug } = useParams<{ slug: string }>();
   const location = useLocation();
   const navigate = useNavigate();
-  const [claimCode, setClaimCode] = useState<string>('');
   const [copied, setCopied] = useState(false);
-  
-  const { prize, isWin } = location.state || { 
-    prize: null, 
-    isWin: false 
+
+  const { prize, isWin, participation } = (location.state || {}) as {
+    prize: Prize | null;
+    isWin: boolean;
+    participation?: Participation;
   };
 
-  // Générer un code unique si le client a gagné
-  useEffect(() => {
-    if (isWin && prize) {
-      // Générer ou récupérer le code depuis le localStorage (pour éviter de le régénérer)
-      const storedCode = localStorage.getItem(`claim_code_${slug}_${prize.id}`);
-      if (storedCode) {
-        setClaimCode(storedCode);
-      } else {
-        const newCode = generateClaimCode();
-        setClaimCode(newCode);
-        localStorage.setItem(`claim_code_${slug}_${prize.id}`, newCode);
-      }
-    }
-  }, [isWin, prize, slug]);
+  const claimCode = participation?.claim_code ?? participation?.id ?? '';
 
-  // Si pas de résultat, rediriger vers le formulaire
-  if (!prize && !location.state) {
+  if (!location.state) {
     navigate(`/r/${slug}/form`);
     return null;
   }
 
-  const expirationDate = new Date();
-  expirationDate.setDate(expirationDate.getDate() + 7);
+  const expirationDate = participation?.expires_at
+    ? new Date(participation.expires_at)
+    : (() => {
+        const d = new Date();
+        d.setDate(d.getDate() + 7);
+        return d;
+      })();
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(claimCode);
@@ -59,118 +47,89 @@ export default function Result() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const cardClass = 'max-w-md w-full rounded-3xl shadow-2xl p-8 text-center relative overflow-hidden';
+  const stars = (
+    <>
+      <span className="absolute top-6 left-8 text-amber-600/40 text-xl">✦</span>
+      <span className="absolute top-8 right-10 text-amber-600/30 text-sm">✦</span>
+      <span className="absolute bottom-24 right-12 text-amber-600/25 text-lg">✦</span>
+      <span className="absolute bottom-32 left-10 text-amber-600/35 text-sm">✦</span>
+    </>
+  );
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
-        {isWin && prize ? (
-          <>
-            {/* Gagné */}
-            <div className="mb-6">
-              <PartyPopper className="w-20 h-20 text-yellow-400 mx-auto mb-4" />
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                🎉 Félicitations !
-              </h2>
+    <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
+      {isWin && (prize || claimCode) ? (
+        <div className={`${cardClass} bg-amber-400`}>
+          {stars}
+          <div className="relative">
+            <h2 className="text-2xl font-black text-gray-900 mb-1 flex items-center justify-center gap-2">
+              <span>☕</span>
+              FÉLICITATIONS !
+              <span>🎉</span>
+            </h2>
+            <p className="text-gray-800 font-bold text-sm uppercase tracking-wide mb-6">
+              Vous avez gagné :
+            </p>
+            <div className="bg-white rounded-2xl p-6 mb-5 shadow-lg">
+              <p className="text-2xl font-black text-rose-600 uppercase">
+                {prize?.name ?? 'Lot'}
+              </p>
             </div>
-
-            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-6 mb-6">
-              <p className="text-sm text-gray-600 mb-2">Tu as gagné :</p>
-              <h3 className="text-2xl font-bold text-indigo-600 mb-4">
-                {prize.name}
-              </h3>
-              
-              {prize.message ? (
-                <p className="text-gray-700 mb-4">{prize.message}</p>
-              ) : (
-                <p className="text-gray-700 mb-4">
-                  Félicitations ! Tu as gagné ce lot.
+            <p className="text-gray-800 text-sm font-medium mb-6">
+              Montrez ce résultat à notre personnel
+            </p>
+            {claimCode && (
+              <div className="bg-amber-500/30 rounded-xl p-4 mb-5">
+                <p className="text-xs font-semibold text-gray-800 mb-2">Code à présenter :</p>
+                <div className="flex items-center justify-center gap-2">
+                  <code className="text-xl font-bold tracking-wider text-gray-900 bg-white/60 px-3 py-2 rounded-lg">
+                    {claimCode}
+                  </code>
+                  <button
+                    onClick={handleCopyCode}
+                    className="p-2 bg-white/60 hover:bg-white/80 rounded-lg transition-colors"
+                    title="Copier le code"
+                  >
+                    {copied ? <Check className="w-5 h-5 text-green-700" /> : <Copy className="w-5 h-5 text-gray-700" />}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-700 mt-2 flex items-center justify-center gap-1">
+                  <Clock className="w-3.5 h-3.5" />
+                  Valable avant le {expirationDate.toLocaleDateString('fr-FR')}
                 </p>
-              )}
-
-              <div className="flex items-center justify-center gap-2 text-sm text-gray-600 bg-white rounded-lg p-3">
-                <Clock className="w-5 h-5 text-orange-500" />
-                <span>
-                  À récupérer sous 7 jours
-                  <br />
-                  <span className="font-semibold">
-                    avant le {expirationDate.toLocaleDateString('fr-FR')}
-                  </span>
-                </span>
               </div>
-            </div>
-
-            {/* Code de réclamation */}
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl p-6 mb-6 text-white">
-              <p className="text-sm mb-3 font-semibold">Ton code de réclamation :</p>
-              <div className="flex items-center justify-center gap-3 mb-3">
-                <code className="text-3xl font-bold tracking-wider bg-white/20 px-4 py-2 rounded-lg">
-                  {claimCode}
-                </code>
-                <button
-                  onClick={handleCopyCode}
-                  className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
-                  title="Copier le code"
-                >
-                  {copied ? (
-                    <Check className="w-5 h-5 text-green-300" />
-                  ) : (
-                    <Copy className="w-5 h-5" />
-                  )}
-                </button>
-              </div>
-              <p className="text-xs opacity-90">
-                📸 Prends une capture d'écran ou copie ce code
-                <br />
-                Présente-le en caisse avec ton téléphone ou email
-              </p>
-            </div>
-
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-              <p className="text-sm text-blue-800">
-                💡 <strong>Comment récupérer ton lot ?</strong>
-                <br />
-                1. Présente-toi en caisse avec ce code
-                <br />
-                2. Donne ton téléphone ou email
-                <br />
-                3. Le staff validera ta réclamation
-              </p>
-            </div>
-
+            )}
             <button
               onClick={() => navigate(`/r/${slug}`)}
-              className="w-full px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold transition-colors"
+              className="w-full py-4 bg-green-500 hover:bg-green-600 text-white rounded-2xl font-bold uppercase text-lg shadow-lg transition-colors"
             >
-              Retour à l'accueil
+              Super !
             </button>
-          </>
-        ) : (
-          <>
-            {/* Perdu */}
+          </div>
+        </div>
+      ) : (
+        <div className={`${cardClass} bg-amber-100`}>
+          {stars}
+          <div className="relative">
             <div className="mb-6">
-              <Frown className="w-20 h-20 text-gray-400 mx-auto mb-4" />
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                😔 Dommage...
-              </h2>
+              <Frown className="w-16 h-16 text-gray-500 mx-auto mb-3" />
+              <h2 className="text-2xl font-black text-gray-900">Dommage...</h2>
             </div>
-
-            <div className="bg-gray-50 rounded-xl p-6 mb-6">
-              <p className="text-gray-700 text-lg mb-4">
-                Tu n'as pas gagné cette fois, mais merci d'avoir participé !
-              </p>
-              <p className="text-gray-600">
-                Reviens nous voir bientôt pour une nouvelle chance de gagner.
+            <div className="bg-white/80 rounded-2xl p-6 mb-6 shadow-md">
+              <p className="text-gray-800 font-medium">
+                Tu n'as pas gagné cette fois, mais merci d'avoir participé ! Reviens nous voir pour une nouvelle chance.
               </p>
             </div>
-
             <button
               onClick={() => navigate(`/r/${slug}`)}
-              className="w-full px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold transition-colors"
+              className="w-full py-4 bg-green-500 hover:bg-green-600 text-white rounded-2xl font-bold uppercase shadow-lg transition-colors"
             >
-              Retour à l'accueil
+              Super !
             </button>
-          </>
-        )}
-      </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

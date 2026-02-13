@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Search, Phone, Mail, Gift, CheckCircle, Clock, XCircle, Copy, Check } from 'lucide-react';
 import NavigationTabs from '../../components/NavigationTabs';
+import { useAuthStore } from '../../store/authStore';
+import { apiFetch } from '../../api/client';
 
 interface Client {
   id: string;
@@ -19,268 +21,60 @@ interface Prize {
 
 interface Participation {
   id: string;
-  prize: Prize;
+  prize: Prize | null;
   claim_code: string;
   won_at: string;
   expires_at: string;
   status: 'A_RECUPERER' | 'RECUPERE' | 'EXPIRE';
   claimed_at?: string;
+  client?: Client | null;
 }
-
-// Données mockées pour la démo (correspondent aux clients de la page Clients)
-const mockClients: Client[] = [
-  {
-    id: '1',
-    phone: '0612345678',
-    email: 'jean.dupont@email.com',
-    first_name: 'Jean',
-    last_name: 'Dupont',
-  },
-  {
-    id: '2',
-    phone: '0698765432',
-    email: 'marie.martin@email.com',
-    first_name: 'Marie',
-    last_name: 'Martin',
-  },
-  {
-    id: '3',
-    phone: '0654321098',
-    email: 'pierre.durand@email.com',
-    first_name: 'Pierre',
-    last_name: 'Durand',
-  },
-];
-
-const mockParticipations: Participation[] = [
-  // Jean Dupont - 2 lots à récupérer
-  {
-    id: '1',
-    prize: {
-      id: '1',
-      name: 'Café offert',
-      message: 'Félicitations ! Profitez de votre café gratuit !',
-    },
-    claim_code: 'JDP-123-CAF',
-    won_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    expires_at: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-    status: 'A_RECUPERER',
-  },
-  {
-    id: '2',
-    prize: {
-      id: '3',
-      name: '-10% sur la commande',
-      message: 'Félicitations ! Profitez de votre réduction !',
-    },
-    claim_code: '929-TBE-Y8C',
-    won_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    expires_at: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString(),
-    status: 'A_RECUPERER',
-  },
-  // Marie Martin - 1 lot à récupérer
-  {
-    id: '3',
-    prize: {
-      id: '2',
-      name: 'Dessert offert',
-      message: 'Bravo ! Choisissez votre dessert préféré !',
-    },
-    claim_code: 'MMT-456-DES',
-    won_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    expires_at: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString(),
-    status: 'A_RECUPERER',
-  },
-  // Pierre Durand - 2 lots (1 à récupérer, 1 déjà récupéré)
-  {
-    id: '4',
-    prize: {
-      id: '1',
-      name: 'Café offert',
-      message: 'Félicitations ! Profitez de votre café gratuit !',
-    },
-    claim_code: 'PDD-789-CAF',
-    won_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    expires_at: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
-    status: 'A_RECUPERER',
-  },
-  {
-    id: '5',
-    prize: {
-      id: '2',
-      name: 'Dessert offert',
-      message: 'Bravo ! Choisissez votre dessert préféré !',
-    },
-    claim_code: 'PDD-321-DES',
-    won_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-    expires_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    status: 'RECUPERE',
-    claimed_at: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-];
 
 export default function Recuperations() {
   const { id: restaurantId } = useParams<{ id: string }>();
+  const { token } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [clientParticipations, setClientParticipations] = useState<Participation[]>([]);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
-
-  // Récupérer les participations récupérées depuis localStorage
-  const getClaimedParticipations = (): Set<string> => {
-    if (typeof window === 'undefined') return new Set();
-    const stored = localStorage.getItem('claimed_participations');
-    return stored ? new Set(JSON.parse(stored)) : new Set();
-  };
-
-  // Sauvegarder une participation comme récupérée dans localStorage
-  const saveClaimedParticipation = (participationId: string) => {
-    if (typeof window === 'undefined') return;
-    const claimed = getClaimedParticipations();
-    claimed.add(participationId);
-    localStorage.setItem('claimed_participations', JSON.stringify(Array.from(claimed)));
-  };
-
-  // Appliquer les statuts récupérés depuis localStorage aux participations mockées
-  const applyClaimedStatus = (participations: Participation[]): Participation[] => {
-    const claimedIds = getClaimedParticipations();
-    return participations.map(p => {
-      if (claimedIds.has(p.id)) {
-        return {
-          ...p,
-          status: 'RECUPERE' as const,
-          claimed_at: p.claimed_at || new Date().toISOString(),
-        };
-      }
-      return p;
-    });
-  };
+  const [searching, setSearching] = useState(false);
 
   const handleSearch = () => {
-    if (!searchQuery.trim()) {
+    if (!searchQuery.trim() || !restaurantId || !token) {
       setSelectedClient(null);
       setClientParticipations([]);
       return;
     }
-
-    const query = searchQuery.trim();
-    const queryUpper = query.toUpperCase();
-    const queryLower = query.toLowerCase();
-
-    // Détecter si c'est un code de réclamation (format XXX-XXX-XXX ou variations)
-    // Pattern flexible pour accepter 2-4 caractères par section (ex: MMT-456-DES, 929-TBE-Y8C)
-    const codePattern = /^[A-Z0-9]{2,4}-[A-Z0-9]{2,4}-[A-Z0-9]{2,4}$/i;
-    const isClaimCode = codePattern.test(query);
-
-    if (isClaimCode) {
-      // Normaliser le code recherché
-      const normalizedQuery = queryUpper.replace(/\s/g, '');
-      
-      // Debug: afficher les codes disponibles
-      console.log('🔍 Recherche du code:', normalizedQuery);
-      console.log('📋 Codes disponibles:', mockParticipations.map(p => p.claim_code));
-      
-      // Rechercher la participation par code (comparaison insensible à la casse)
-      const participationByCode = mockParticipations.find((p) => {
-        const normalizedCode = p.claim_code.toUpperCase().replace(/\s/g, '');
-        const matches = normalizedCode === normalizedQuery;
-        if (matches) {
-          console.log('✅ Code trouvé:', p.claim_code);
-        }
-        return matches;
-      });
-      
-      console.log('🎯 Résultat:', participationByCode ? 'TROUVÉ' : 'NON TROUVÉ');
-
-      if (participationByCode) {
-        // Trouver le client associé selon le code
-        let client = mockClients[0]; // Par défaut
-        const codeUpper = participationByCode.claim_code.toUpperCase();
-        
-        // Association des codes aux clients
-        if (codeUpper === 'JDP-123-CAF' || codeUpper === '929-TBE-Y8C') {
-          client = mockClients[0]; // Jean Dupont
-        } else if (codeUpper === 'MMT-456-DES') {
-          client = mockClients[1]; // Marie Martin
-        } else if (codeUpper === 'PDD-789-CAF' || codeUpper === 'PDD-321-DES') {
-          client = mockClients[2]; // Pierre Durand
-        }
-        
-        // S'assurer que le client est bien défini
-        if (!client) {
-          client = mockClients[0]; // Fallback
-        }
-        
-        // Appliquer le statut récupéré depuis localStorage
-        const participationWithStatus = applyClaimedStatus([participationByCode])[0];
-        
-        setSelectedClient(client);
-        setClientParticipations([participationWithStatus]);
-        return;
-      }
-      
-      // Si le code n'est pas trouvé dans les participations, essayer quand même de trouver le client
-      // Cela peut arriver si le code a été généré mais pas encore enregistré
-      console.warn('Code non trouvé dans les participations:', normalizedQuery);
-      
-      // Si le code n'est pas trouvé, afficher le message d'erreur
-      console.warn('Code non trouvé:', normalizedQuery, 'Codes disponibles:', mockParticipations.map(p => p.claim_code));
-      setSelectedClient(null);
-      setClientParticipations([]);
-      return;
-    }
-
-    // Recherche par téléphone ou email
-    const client = mockClients.find(
-      (c) =>
-        c.phone.replace(/\s/g, '').includes(queryLower.replace(/\s/g, '')) ||
-        c.email.toLowerCase().includes(queryLower)
-    );
-
-    if (client) {
-      setSelectedClient(client);
-      let clientParticipationsList: Participation[] = [];
-      
-      if (client.id === '1') {
-        clientParticipationsList = mockParticipations.filter(
-          (p) => p.claim_code === 'JDP-123-CAF' || p.claim_code === '929-TBE-Y8C'
-        );
-      } else if (client.id === '2') {
-        clientParticipationsList = mockParticipations.filter(
-          (p) => p.claim_code === 'MMT-456-DES'
-        );
-      } else if (client.id === '3') {
-        clientParticipationsList = mockParticipations.filter(
-          (p) => p.claim_code === 'PDD-789-CAF' || p.claim_code === 'PDD-321-DES'
-        );
-      }
-      
-      // Appliquer les statuts récupérés depuis localStorage
-      const participationsWithStatus = applyClaimedStatus(clientParticipationsList);
-      
-      setClientParticipations(participationsWithStatus);
-    } else {
-      setSelectedClient(null);
-      setClientParticipations([]);
-    }
+    setSearching(true);
+    apiFetch<Participation[]>(`/api/restaurants/${restaurantId}/participations?search=${encodeURIComponent(searchQuery.trim())}`, { token })
+      .then((list) => {
+        setClientParticipations(list);
+        const first = list[0];
+        setSelectedClient(first?.client ?? null);
+      })
+      .catch(() => {
+        setSelectedClient(null);
+        setClientParticipations([]);
+      })
+      .finally(() => setSearching(false));
   };
 
   const handleClaimPrize = (participationId: string) => {
-    // Sauvegarder dans localStorage pour persister entre les recherches
-    saveClaimedParticipation(participationId);
-    
-    // Mettre à jour l'état local
-    setClientParticipations((prev) =>
-      prev.map((p) =>
-        p.id === participationId
-          ? {
-              ...p,
-              status: 'RECUPERE' as const,
-              claimed_at: new Date().toISOString(),
-            }
-          : p
-      )
-    );
+    if (!restaurantId || !token) return;
+    apiFetch(`/api/restaurants/${restaurantId}/participations/${participationId}/claim`, {
+      method: 'PATCH',
+      token,
+    })
+      .then(() => {
+        setClientParticipations((prev) =>
+          prev.map((p) =>
+            p.id === participationId
+              ? { ...p, status: 'RECUPERE' as const, claimed_at: new Date().toISOString() }
+              : p
+          )
+        );
+      })
+      .catch(() => {});
   };
 
   const handleCopyCode = (code: string) => {
@@ -336,10 +130,11 @@ export default function Recuperations() {
           </div>
           <button
             onClick={handleSearch}
-            className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-colors flex items-center gap-2"
+            disabled={searching}
+            className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-colors flex items-center gap-2 disabled:opacity-50"
           >
             <Search className="w-5 h-5" />
-            Rechercher
+            {searching ? 'Recherche...' : 'Rechercher'}
           </button>
         </div>
         <p className="text-sm text-gray-500 mt-2">
@@ -408,10 +203,10 @@ export default function Recuperations() {
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
                           <h3 className="text-lg font-bold text-gray-900 mb-1">
-                            {participation.prize.name}
+                            {participation.prize?.name ?? 'Lot'}
                           </h3>
                           <p className="text-sm text-gray-600 mb-2">
-                            {participation.prize.message}
+                            {participation.prize?.message ?? ''}
                           </p>
                           <div className="flex items-center gap-4 text-sm">
                             <div className="flex items-center gap-2">
@@ -494,7 +289,7 @@ export default function Recuperations() {
                     <div className="flex items-center justify-between">
                       <div>
                         <h3 className="font-semibold text-gray-900">
-                          {participation.prize.name}
+                          {participation.prize?.name ?? 'Lot'}
                         </h3>
                         <p className="text-sm text-gray-600">
                           Code : <code className="font-mono">{participation.claim_code}</code>

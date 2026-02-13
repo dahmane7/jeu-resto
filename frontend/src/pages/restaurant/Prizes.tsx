@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { Plus, Edit, Trash2, Power } from 'lucide-react';
+import { Plus, Edit, Trash2 } from 'lucide-react';
 import NavigationTabs from '../../components/NavigationTabs';
+import { useAuthStore } from '../../store/authStore';
+import { apiFetch } from '../../api/client';
 
 interface Prize {
   id: string;
@@ -12,22 +14,47 @@ interface Prize {
 }
 
 export default function Prizes() {
-  const { id } = useParams<{ id: string }>();
+  const { id: restaurantId } = useParams<{ id: string }>();
+  const { token } = useAuthStore();
   const [wheelActive, setWheelActive] = useState(true);
-  const [prizes, setPrizes] = useState<Prize[]>([
-    { id: '1', name: 'Café offert', percentage: 30, message: 'Félicitations !', is_active: true },
-    { id: '2', name: 'Dessert offert', percentage: 25, message: 'Bravo !', is_active: true },
-    { id: '3', name: '-10% sur la commande', percentage: 25, message: 'Profitez de votre réduction !', is_active: true },
-  ]);
+  const [prizes, setPrizes] = useState<Prize[]>([]);
+  const [loading, setLoading] = useState(true);
   const [editingPrize, setEditingPrize] = useState<Prize | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({ name: '', percentage: 0, message: '' });
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const fetchData = useCallback(() => {
+    if (!restaurantId || !token) return;
+    Promise.all([
+      apiFetch<{ wheel_active: boolean }>(`/api/restaurants/${restaurantId}`, { token }),
+      apiFetch<Prize[]>(`/api/restaurants/${restaurantId}/prizes`, { token }),
+    ])
+      .then(([resto, prizeList]) => {
+        setWheelActive(resto.wheel_active);
+        setPrizes(prizeList || []);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [restaurantId, token]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const totalPercentage = prizes.filter(p => p.is_active).reduce((sum, p) => sum + p.percentage, 0);
   const isValid = totalPercentage <= 100;
 
   const handleToggleWheel = () => {
-    setWheelActive(!wheelActive);
+    if (!restaurantId || !token) return;
+    const next = !wheelActive;
+    setWheelActive(next);
+    apiFetch(`/api/restaurants/${restaurantId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ wheel_active: next }),
+      token,
+    }).catch(() => setWheelActive(wheelActive));
   };
 
   const handleEdit = (prize: Prize) => {
@@ -36,23 +63,60 @@ export default function Prizes() {
     setShowModal(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Êtes-vous sûr de vouloir supprimer ce lot ?')) {
-      setPrizes(prizes.filter(p => p.id !== id));
-    }
+  const handleDelete = (prizeId: string) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce lot ?') || !restaurantId || !token) return;
+    apiFetch(`/api/restaurants/${restaurantId}/prizes/${prizeId}`, { method: 'DELETE', token })
+      .then(() => setPrizes((p) => p.filter((x) => x.id !== prizeId)))
+      .catch(() => {});
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!restaurantId || !token) return;
+    setSubmitError(null);
+    setSubmitting(true);
     if (editingPrize) {
-      setPrizes(prizes.map(p => p.id === editingPrize.id ? { ...p, ...formData } : p));
+      apiFetch<Prize>(`/api/restaurants/${restaurantId}/prizes/${editingPrize.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(formData),
+        token,
+      })
+        .then((updated) => {
+          setPrizes((p) => p.map((x) => (x.id === updated.id ? updated : x)));
+          setShowModal(false);
+          setEditingPrize(null);
+          setFormData({ name: '', percentage: 0, message: '' });
+        })
+        .catch((err) => {
+          setSubmitError(err instanceof Error ? err.message : 'Erreur lors de la modification.');
+        })
+        .finally(() => setSubmitting(false));
     } else {
-      setPrizes([...prizes, { id: Date.now().toString(), ...formData, is_active: true }]);
+      apiFetch<Prize>(`/api/restaurants/${restaurantId}/prizes`, {
+        method: 'POST',
+        body: JSON.stringify(formData),
+        token,
+      })
+        .then((created) => {
+          setPrizes((p) => [...p, { ...created, is_active: true }]);
+          setShowModal(false);
+          setEditingPrize(null);
+          setFormData({ name: '', percentage: 0, message: '' });
+        })
+        .catch((err) => {
+          setSubmitError(err instanceof Error ? err.message : 'Impossible d\'enregistrer le lot. Vérifiez votre connexion ou déconnectez-vous puis reconnectez-vous.');
+        })
+        .finally(() => setSubmitting(false));
     }
-    setShowModal(false);
-    setEditingPrize(null);
-    setFormData({ name: '', percentage: 0, message: '' });
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <p className="text-gray-500">Chargement...</p>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -60,7 +124,13 @@ export default function Prizes() {
         <h1 className="text-2xl font-bold text-gray-900">Paramétrage Roue</h1>
       </div>
 
-      <NavigationTabs restaurantId={id || ''} />
+      <NavigationTabs restaurantId={restaurantId || ''} />
+
+      {restaurantId === 'restaurant-1' && (
+        <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-sm">
+          <strong>Lien obsolète.</strong> Déconnectez-vous puis reconnectez-vous avec <strong>admin@restaurant.com</strong> / <strong>Admin123!</strong> pour accéder à votre restaurant et enregistrer les lots.
+        </div>
+      )}
 
       {/* Toggle Roue Active */}
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
@@ -168,6 +238,11 @@ export default function Prizes() {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               {editingPrize ? 'Modifier le lot' : 'Ajouter un lot'}
             </h3>
+            {submitError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
+                {submitError}
+              </div>
+            )}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nom *</label>
@@ -208,6 +283,7 @@ export default function Prizes() {
                   onClick={() => {
                     setShowModal(false);
                     setEditingPrize(null);
+                    setSubmitError(null);
                   }}
                   className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
                 >
@@ -215,9 +291,10 @@ export default function Prizes() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+                  disabled={submitting}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
                 >
-                  {editingPrize ? 'Modifier' : 'Ajouter'}
+                  {submitting ? 'Enregistrement...' : editingPrize ? 'Modifier' : 'Ajouter'}
                 </button>
               </div>
             </form>

@@ -1,5 +1,5 @@
 import { authServiceMock } from './auth.service.mock.js';
+import { authServicePrisma } from './auth.service.prisma.js';
 
-// Pour l'instant, on utilise uniquement le mode mock
-// Quand Airtable sera configuré, on pourra basculer vers le vrai service
-export const authService = authServiceMock;
+const usePrisma = !!process.env.DATABASE_URL;
+export const authService = usePrisma ? authServicePrisma : authServiceMock;
