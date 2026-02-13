@@ -331,12 +331,12 @@ export const getParticipations = async (req: Request, res: Response) => {
     // Liste par statut (ex. Lots à récupérer) sans recherche
     if (statusFilter && ['A_RECUPERER', 'RECUPERE', 'EXPIRE'].includes(statusFilter)) {
       const participations = await prisma.participation.findMany({
-        where: { restaurant_id: restaurantId, status: statusFilter },
+        where: { restaurant_id: restaurantId, status: statusFilter as 'A_RECUPERER' | 'RECUPERE' | 'EXPIRE' },
         include: { client: true, prize: true },
         orderBy: { won_at: 'desc' },
         take: 200,
       });
-      return res.json(participations.map(mapParticipation));
+      return res.json(participations.map((p) => mapParticipation(p as Parameters<typeof mapParticipation>[0])));
     }
 
     if (!search.trim()) {

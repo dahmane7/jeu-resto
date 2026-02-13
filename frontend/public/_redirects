@@ -1,0 +1,2 @@
+# SPA : toutes les routes vers index.html (utile si déploiement sans netlify.toml)
+/*    /index.html   200

@@ -8,7 +8,7 @@ import { prisma } from './lib/prisma.js';
 
 dotenv.config();
 
-const app = express();
+export const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
@@ -37,7 +37,9 @@ app.get('/api/health', async (req, res) => {
   });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-});
+/** Démarrer le serveur en local (non utilisé sur Netlify) */
+export function startServer(): void {
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+  });
+}

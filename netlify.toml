@@ -1,0 +1,23 @@
+# Build : d'abord le backend (pour Prisma + dist), puis le frontend
+[build]
+  command = "npm run build"
+  publish = "frontend/dist"
+  functions = "netlify/functions"
+
+# Variables d'environnement pour le build (optionnel)
+[build.environment]
+  NODE_VERSION = "20"
+
+# Redirection : toutes les requêtes /api/* vers la fonction server
+# (Netlify transmet le path original, Express reçoit bien /api/...)
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/server"
+  status = 200
+  force = true
+
+# SPA : toute autre route sert index.html (refresh sur /r/xxx, /restaurant/xxx, etc.)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
