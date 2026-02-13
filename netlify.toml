@@ -8,11 +8,10 @@
 [build.environment]
   NODE_VERSION = "20"
 
-# Redirection : toutes les requêtes /api/* vers la fonction server
-# (Netlify transmet le path original, Express reçoit bien /api/...)
+# Redirection : /api/* vers la fonction en conservant le chemin (/api/...)
 [[redirects]]
   from = "/api/*"
-  to = "/.netlify/functions/server"
+  to = "/.netlify/functions/server/api/:splat"
   status = 200
   force = true
 
