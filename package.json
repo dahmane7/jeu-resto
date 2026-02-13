@@ -2,7 +2,8 @@
   "name": "jeu-resto",
   "private": true,
   "scripts": {
-    "build": "npm run build:backend && npm run build:frontend",
+    "build": "npm run generate:prisma && npm run build:backend && npm run build:frontend",
+    "generate:prisma": "prisma generate --schema=backend/prisma/schema.prisma",
     "build:backend": "cd backend && npm install && npm run build",
     "build:frontend": "cd frontend && npm install && npm run build",
     "dev:backend": "cd backend && npm run dev",
@@ -16,5 +17,8 @@
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.2",
     "serverless-http": "^3.2.0"
+  },
+  "devDependencies": {
+    "prisma": "^5.22.0"
   }
 }
