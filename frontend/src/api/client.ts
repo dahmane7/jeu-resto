@@ -20,7 +20,10 @@ export async function apiFetch<T>(
   const res = await fetch(getApiUrl(path), { ...init, headers });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error((err as { error?: string }).error || `HTTP ${res.status}`);
+    const body = err as { error?: string; debug?: string };
+    const msg = body.error || `HTTP ${res.status}`;
+    const detail = body.debug ? ` ${body.debug}` : '';
+    throw new Error(msg + detail);
   }
   if (res.status === 204) return undefined as T;
   return res.json();
@@ -35,7 +38,10 @@ export async function publicFetch<T>(path: string, options: RequestInit = {}): P
   const res = await fetch(getApiUrl(path), { ...options, headers });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error((err as { error?: string }).error || `HTTP ${res.status}`);
+    const body = err as { error?: string; debug?: string };
+    const msg = body.error || `HTTP ${res.status}`;
+    const detail = body.debug ? ` ${body.debug}` : '';
+    throw new Error(msg + detail);
   }
   if (res.status === 204) return undefined as T;
   return res.json();
