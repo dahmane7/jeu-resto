@@ -13,9 +13,9 @@ interface PeriodSelectorProps {
 export default function PeriodSelector({
   period,
   onPeriodChange,
-  startDate,
-  endDate,
-  onDateChange,
+  startDate: _startDate,
+  endDate: _endDate,
+  onDateChange: _onDateChange,
 }: PeriodSelectorProps) {
   return (
     <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6">

@@ -178,7 +178,6 @@ export default function Wheel() {
       const selectedPrize = result.prize
         ? prizes.find((p) => p.id === result.prize!.id) ?? prizes[0]
         : prizes.find((p) => p.name.toLowerCase().includes('perdu')) ?? prizes[prizes.length - 1];
-      const totalPercentage = prizes.reduce((sum, p) => sum + p.percentage, 0);
       const prizeCenterAngle = getPrizeAngleForPointer(selectedPrize);
       const currentCenterPosition = (rotation + prizeCenterAngle) % 360;
       const angleToAlign = (360 - currentCenterPosition) % 360;
