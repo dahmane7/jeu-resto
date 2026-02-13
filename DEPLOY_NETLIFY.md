@@ -16,7 +16,7 @@ Dans **Site configuration** → **Environment variables**, ajoute :
 
 | Variable | Valeur | Utilisation |
 |----------|--------|-------------|
-| `DATABASE_URL` | URL de connexion Supabase (PostgreSQL) avec `?sslmode=require` | Backend (Prisma) |
+| `DATABASE_URL` | **URL Supabase en mode pooler** (voir ci‑dessous). Obligatoire pour que la fonction puisse joindre la base. | Backend (Prisma) |
 | `JWT_SECRET` | Chaîne secrète pour signer les tokens | Auth |
 | `CORS_ORIGIN` | URL du site Netlify (ex. `https://ton-site.netlify.app`) | CORS (optionnel si même origine) |
 | `VITE_API_URL` | **URL du site + chemin de la fonction** (ex. `https://ton-site.netlify.app/.netlify/functions/server`) | Build frontend : appels directs vers la fonction API |
@@ -27,6 +27,27 @@ Pour un déploiement sur `https://cozy-salamander-a3f6ff.netlify.app` :
 - `CORS_ORIGIN` = `https://cozy-salamander-a3f6ff.netlify.app`
 
 Le front appelle alors directement la fonction (ex. `.../.netlify/functions/server/api/auth/login`), sans passer par une redirection.
+
+#### Connexion base de données (important)
+
+Si tu vois **« Can't reach database server at ...:5432 »** au login, la fonction Netlify n’arrive pas à joindre Supabase. À faire :
+
+1. **Vérifier que `DATABASE_URL` est bien définie** dans Netlify (Site configuration → Environment variables), sans espace, pour l’environnement **Production** (et Build si tu veux).
+2. **Utiliser l’URL en mode pooler** pour le serverless (recommandé Supabase) :
+   - Dans le dashboard Supabase : **Project Settings** → **Database**.
+   - Section **Connection string** : onglet **Connection pooling** (ou **Transaction** / **Session**).
+   - Copier l’URL (elle utilise le host `...pooler.supabase.com` et le port **6543**, pas 5432).
+   - Ajouter `?sslmode=require` à la fin si ce n’est pas déjà présent.
+   - Mettre cette URL dans `DATABASE_URL` sur Netlify.
+3. **Vérifier que le projet Supabase n’est pas en pause** (offre gratuite) : Dashboard → Settings → General → si « Paused », cliquer sur **Restore**.
+
+Exemple d’URL pooler (à adapter avec ton mot de passe et ta région) :
+
+```text
+postgresql://postgres.[ref]:[MOT_DE_PASSE]@aws-0-[region].pooler.supabase.com:6543/postgres?sslmode=require
+```
+
+Après modification des variables, redéployer le site (Deploy → Trigger deploy).
 
 ### 2. Connexion du repo
 
@@ -59,6 +80,7 @@ Les requêtes vers `/api/*` sont envoyées à la fonction ; le reste sert le SPA
 
 ## En cas d’erreur de déploiement
 
+- **« Can't reach database server » (500 au login)** : voir la section **Connexion base de données** plus haut (DATABASE_URL sur Netlify, URL pooler Supabase, projet non en pause).
 - **Function bundle trop gros** : le backend + Prisma peuvent dépasser la limite. Vérifier la taille dans les logs Netlify ; si besoin, héberger le backend ailleurs (ex. Render) et mettre cette URL dans `VITE_API_URL`.
 - **502 / timeout** : augmenter le timeout de la fonction dans Netlify (plan payant) ou optimiser les requêtes DB.
 - **CORS** : si tu appelles le site depuis un autre domaine, définis `CORS_ORIGIN` sur cette origine.
