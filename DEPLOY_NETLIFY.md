@@ -19,14 +19,14 @@ Dans **Site configuration** → **Environment variables**, ajoute :
 | `DATABASE_URL` | URL de connexion Supabase (PostgreSQL) avec `?sslmode=require` | Backend (Prisma) |
 | `JWT_SECRET` | Chaîne secrète pour signer les tokens | Auth |
 | `CORS_ORIGIN` | URL du site Netlify (ex. `https://ton-site.netlify.app`) | CORS (optionnel si même origine) |
-| `VITE_API_URL` | **Même URL** que le site (ex. `https://ton-site.netlify.app`) | Build frontend : appels API vers ton site |
+| `VITE_API_URL` | **URL du site + chemin de la fonction** (ex. `https://ton-site.netlify.app/.netlify/functions/server`) | Build frontend : appels directs vers la fonction API |
 
-Pour un déploiement sur `https://mon-jeu-resto.netlify.app` :
+Pour un déploiement sur `https://cozy-salamander-a3f6ff.netlify.app` :
 
-- `VITE_API_URL` = `https://mon-jeu-resto.netlify.app`
-- `CORS_ORIGIN` = `https://mon-jeu-resto.netlify.app`
+- `VITE_API_URL` = `https://cozy-salamander-a3f6ff.netlify.app/.netlify/functions/server` (sans slash final)
+- `CORS_ORIGIN` = `https://cozy-salamander-a3f6ff.netlify.app`
 
-Le front appelle alors `https://mon-jeu-resto.netlify.app/api/...`, redirigé par Netlify vers la fonction.
+Le front appelle alors directement la fonction (ex. `.../.netlify/functions/server/api/auth/login`), sans passer par une redirection.
 
 ### 2. Connexion du repo
 

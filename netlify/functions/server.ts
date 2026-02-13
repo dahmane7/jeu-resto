@@ -3,11 +3,21 @@ import { app } from '../../backend/dist/index.js';
 
 const serverlessHandler = serverless(app, { binary: false });
 
-/** Netlify redirige /api/* vers /.netlify/functions/server/api/:splat ; on enlève le préfixe pour Express */
-export const handler = (event: unknown, context: unknown) => {
+export const handler = async (event: unknown, context: unknown) => {
   const e = event as { path?: string; [k: string]: unknown };
   const path = e.path?.startsWith('/.netlify/functions/server')
     ? (e.path.replace(/^\/\.netlify\/functions\/server/, '') || '/')
     : e.path;
-  return serverlessHandler({ ...e, path }, context);
+  const eventWithPath = { ...e, path };
+  try {
+    return await serverlessHandler(eventWithPath, context);
+  } catch (err) {
+    console.error('Function error:', err);
+    const message = err instanceof Error ? err.message : String(err);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: message }),
+      headers: { 'Content-Type': 'application/json' },
+    };
+  }
 };

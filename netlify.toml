@@ -8,12 +8,7 @@
 [build.environment]
   NODE_VERSION = "20"
 
-# Redirection : /api/* vers la fonction en conservant le chemin (/api/...)
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/server/api/:splat"
-  status = 200
-  force = true
+# Pas de redirection /api/* : le front appelle directement /.netlify/functions/server (voir VITE_API_URL ci‑dessous)
 
 # SPA : toute autre route sert index.html (refresh sur /r/xxx, /restaurant/xxx, etc.)
 [[redirects]]
