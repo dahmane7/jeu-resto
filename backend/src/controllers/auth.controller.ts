@@ -18,7 +18,11 @@ export const login = async (req: Request, res: Response) => {
     res.json(result);
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Erreur lors de la connexion' });
+    const message = error instanceof Error ? error.message : String(error);
+    res.status(500).json({
+      error: 'Erreur lors de la connexion',
+      debug: message,
+    });
   }
 };
 
