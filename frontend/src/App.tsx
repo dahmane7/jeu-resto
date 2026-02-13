@@ -15,6 +15,7 @@ import RestaurantDashboard from './pages/restaurant/RestaurantDashboard';
 import Prizes from './pages/restaurant/Prizes';
 import Clients from './pages/restaurant/Clients';
 import Recuperations from './pages/restaurant/Recuperations';
+import Parametres from './pages/restaurant/Parametres';
 
 // Créer une instance de QueryClient
 const queryClient = new QueryClient({
@@ -94,6 +95,7 @@ function App() {
                     <Route path="prizes" element={<Prizes />} />
                     <Route path="clients" element={<Clients />} />
                     <Route path="recuperations" element={<Recuperations />} />
+                    <Route path="parametres" element={<Parametres />} />
                     <Route path="" element={<Navigate to="dashboard" replace />} />
                     <Route path="*" element={<Navigate to="dashboard" replace />} />
                   </Routes>

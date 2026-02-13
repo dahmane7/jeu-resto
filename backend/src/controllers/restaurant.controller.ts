@@ -23,10 +23,13 @@ export const getRestaurant = async (req: Request, res: Response) => {
 export const updateRestaurant = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { wheel_active } = req.body as { wheel_active?: boolean };
+    const body = req.body as { wheel_active?: boolean; google_review_url?: string };
+    const data: { wheel_active?: boolean; google_review_url?: string } = {};
+    if (body.wheel_active !== undefined) data.wheel_active = body.wheel_active;
+    if (body.google_review_url !== undefined) data.google_review_url = body.google_review_url.trim();
     const restaurant = await prisma.restaurant.update({
       where: { id },
-      data: wheel_active !== undefined ? { wheel_active } : {},
+      data: Object.keys(data).length ? data : {},
     });
     res.json(restaurant);
   } catch (e) {

@@ -36,15 +36,15 @@ Si tu vois **« Can't reach database server at ...:5432 »** au login, la foncti
 2. **Utiliser l’URL en mode pooler** pour le serverless (recommandé Supabase) :
    - Dans le dashboard Supabase : **Project Settings** → **Database**.
    - Section **Connection string** : onglet **Connection pooling** (ou **Transaction** / **Session**).
-   - Copier l’URL (elle utilise le host `...pooler.supabase.com` et le port **6543**, pas 5432).
-   - Ajouter `?sslmode=require` à la fin si ce n’est pas déjà présent.
+   - Copier l’URL (elle utilise le host `...pooler.supabase.com` et le port **6543**, pas 5432). L’utilisateur est en général `postgres.[ref]` (ref = id du projet).
+   - Ajouter en query string : `?pgbouncer=true&sslmode=require` (ou au minimum `?sslmode=require`) si ce n’est pas déjà présent.
    - Mettre cette URL dans `DATABASE_URL` sur Netlify.
 3. **Vérifier que le projet Supabase n’est pas en pause** (offre gratuite) : Dashboard → Settings → General → si « Paused », cliquer sur **Restore**.
 
-Exemple d’URL pooler (à adapter avec ton mot de passe et ta région) :
+Exemple d’URL pooler qui fonctionne sur Netlify (à adapter avec ton mot de passe et ta région) :
 
 ```text
-postgresql://postgres.[ref]:[MOT_DE_PASSE]@aws-0-[region].pooler.supabase.com:6543/postgres?sslmode=require
+postgresql://postgres.[ref]:[MOT_DE_PASSE]@aws-1-[region].pooler.supabase.com:6543/postgres?pgbouncer=true&sslmode=require
 ```
 
 Après modification des variables, redéployer le site (Deploy → Trigger deploy).
