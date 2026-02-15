@@ -41,22 +41,75 @@ export const updateRestaurant = async (req: Request, res: Response) => {
 export const getStats = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const startDate = req.query.startDate as string | undefined;
+    const endDate = req.query.endDate as string | undefined;
+
+    const start = startDate ? new Date(startDate) : undefined;
+    const end = endDate ? new Date(endDate) : undefined;
+    const hasDateFilter =
+      start && end && !Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime());
+    const dateRange = hasDateFilter && start && end ? { gte: start, lte: end } : undefined;
+
+    const now = new Date();
 
     const [visits, googleClicks, forms, spins, prizesToClaim, prizesClaimed, prizesExpired] = await Promise.all([
-      prisma.analytics.count({ where: { restaurant_id: id, event_type: 'VISIT' } }),
-      prisma.analytics.count({ where: { restaurant_id: id, event_type: 'GOOGLE_CLICK' } }),
-      prisma.analytics.count({ where: { restaurant_id: id, event_type: 'FORM_SUBMIT' } }),
-      prisma.analytics.count({ where: { restaurant_id: id, event_type: 'SPIN' } }),
-      prisma.participation.count({
-        where: { restaurant_id: id, status: 'A_RECUPERER', expires_at: { gte: new Date() } },
+      prisma.analytics.count({
+        where: dateRange
+          ? { restaurant_id: id, event_type: 'VISIT', date: dateRange }
+          : { restaurant_id: id, event_type: 'VISIT' },
       }),
-      prisma.participation.count({ where: { restaurant_id: id, status: 'RECUPERE' } }),
-      prisma.participation.count({
-        where: {
-          restaurant_id: id,
-          OR: [{ status: 'EXPIRE' }, { status: 'A_RECUPERER', expires_at: { lt: new Date() } }],
-        },
+      prisma.analytics.count({
+        where: dateRange
+          ? { restaurant_id: id, event_type: 'GOOGLE_CLICK', date: dateRange }
+          : { restaurant_id: id, event_type: 'GOOGLE_CLICK' },
       }),
+      prisma.analytics.count({
+        where: dateRange
+          ? { restaurant_id: id, event_type: 'FORM_SUBMIT', date: dateRange }
+          : { restaurant_id: id, event_type: 'FORM_SUBMIT' },
+      }),
+      prisma.analytics.count({
+        where: dateRange
+          ? { restaurant_id: id, event_type: 'SPIN', date: dateRange }
+          : { restaurant_id: id, event_type: 'SPIN' },
+      }),
+      dateRange
+        ? prisma.participation.count({
+            where: {
+              restaurant_id: id,
+              status: 'A_RECUPERER',
+              expires_at: { gte: now },
+              won_at: dateRange,
+            },
+          })
+        : prisma.participation.count({
+            where: { restaurant_id: id, status: 'A_RECUPERER', expires_at: { gte: now } },
+          }),
+      dateRange
+        ? prisma.participation.count({
+            where: {
+              restaurant_id: id,
+              status: 'RECUPERE',
+              claimed_at: dateRange,
+            },
+          })
+        : prisma.participation.count({
+            where: { restaurant_id: id, status: 'RECUPERE' },
+          }),
+      dateRange
+        ? prisma.participation.count({
+            where: {
+              restaurant_id: id,
+              OR: [{ status: 'EXPIRE' }, { status: 'A_RECUPERER', expires_at: { lt: now } }],
+              expires_at: dateRange,
+            },
+          })
+        : prisma.participation.count({
+            where: {
+              restaurant_id: id,
+              OR: [{ status: 'EXPIRE' }, { status: 'A_RECUPERER', expires_at: { lt: now } }],
+            },
+          }),
     ]);
 
     res.json({
@@ -70,6 +123,24 @@ export const getStats = async (req: Request, res: Response) => {
     });
   } catch (e) {
     console.error('getStats', e);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+};
+
+export const getAnalytics = async (req: Request, res: Response) => {
+  try {
+    const { id: restaurantId } = req.params;
+    const eventType = (req.query.event_type as string) || 'VISIT';
+    const limit = Math.min(Number(req.query.limit) || 100, 1000);
+    const list = await prisma.analytics.findMany({
+      where: { restaurant_id: restaurantId, event_type: eventType },
+      orderBy: { date: 'desc' },
+      take: limit,
+      select: { id: true, date: true, event_type: true },
+    });
+    res.json(list);
+  } catch (e) {
+    console.error('getAnalytics', e);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 };

@@ -53,7 +53,7 @@ export default function Parametres() {
     return (
       <div>
         <NavigationTabs restaurantId={restaurantId!} />
-        <p className="text-gray-500">Chargement...</p>
+        <p className="text-white">Chargement...</p>
       </div>
     );
   }
@@ -62,15 +62,15 @@ export default function Parametres() {
     <div>
       <NavigationTabs restaurantId={restaurantId!} />
       <div className="max-w-xl">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+        <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
           <ExternalLink className="w-5 h-5" />
           Lien avis Google
         </h2>
-        <p className="text-sm text-gray-600 mb-4">
+        <p className="text-sm text-white mb-4">
           URL vers laquelle le bouton « Laisser un avis Google » redirige les clients sur la page publique (ex. page Google de ton établissement).
         </p>
         <div className="space-y-3">
-          <label htmlFor="google_review_url" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="google_review_url" className="block text-sm font-medium text-white">
             URL de la page Google Avis
           </label>
           <input

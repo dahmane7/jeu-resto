@@ -107,8 +107,8 @@ export default function Recuperations() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Gestion des Récupérations</h1>
-      <p className="text-gray-600 mb-8">
+      <h1 className="text-2xl font-bold text-white mb-6">Gestion des Récupérations</h1>
+      <p className="text-white mb-8">
         Recherchez un client et validez la récupération de ses gains
       </p>
 

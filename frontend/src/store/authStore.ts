@@ -16,7 +16,15 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>((set) => ({
   token: typeof window !== 'undefined' ? localStorage.getItem('auth-token') : null,
-  user: typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('auth-user') || 'null') : null,
+  user: (() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const raw = localStorage.getItem('auth-user');
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  })(),
   setAuth: (token, user) => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('auth-token', token);

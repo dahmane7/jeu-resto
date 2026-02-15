@@ -6,6 +6,7 @@ import {
   getRestaurant,
   updateRestaurant,
   getStats,
+  getAnalytics,
   getPrizes,
   createPrize,
   updatePrize,
@@ -23,9 +24,9 @@ const router = Router({ mergeParams: true });
 router.use(authenticate);
 router.use(requireRole('ADMIN_RESTAURANT', 'SUPER_ADMIN'));
 
-router.get('/:id', requireRestaurantAccess, getRestaurant);
-router.patch('/:id', requireRestaurantAccess, updateRestaurant);
+// Routes avec sous-chemin en premier (pour ne pas être capturées par /:id)
 router.get('/:id/stats', requireRestaurantAccess, getStats);
+router.get('/:id/analytics', requireRestaurantAccess, getAnalytics);
 router.get('/:id/prizes', requireRestaurantAccess, getPrizes);
 router.post('/:id/prizes', requireRestaurantAccess, createPrize);
 router.patch('/:id/prizes/:prizeId', requireRestaurantAccess, updatePrize);
@@ -36,5 +37,6 @@ router.patch('/:id/clients/:clientId', requireRestaurantAccess, updateClient);
 router.delete('/:id/clients/:clientId', requireRestaurantAccess, deleteClient);
 router.get('/:id/participations', requireRestaurantAccess, getParticipations);
 router.patch('/:id/participations/:participationId/claim', requireRestaurantAccess, claimParticipation);
-
+router.get('/:id', requireRestaurantAccess, getRestaurant);
+router.patch('/:id', requireRestaurantAccess, updateRestaurant);
 export default router;

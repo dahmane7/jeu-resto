@@ -113,7 +113,7 @@ export default function Prizes() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <p className="text-gray-500">Chargement...</p>
+        <p className="text-white">Chargement...</p>
       </div>
     );
   }
@@ -121,7 +121,7 @@ export default function Prizes() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Paramétrage Roue</h1>
+        <h1 className="text-2xl font-bold text-white">Paramétrage Roue</h1>
       </div>
 
       <NavigationTabs restaurantId={restaurantId || ''} />
